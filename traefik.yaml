@@ -1,0 +1,30 @@
+version: '2'
+
+services:
+  traefik17:
+    # v2 requires very verbose config. Each frontend/backend must be explictly defined, even with labels.
+    image: traefik:v1.7.16-alpine
+    container_name: traefik17
+    environment:
+      - CF_API_EMAIL=secret
+      - CF_API_KEY=secret
+    command: --web --docker --docker.watch --docker.domain=ayew.host --logLevel=DEBUG
+    ports:
+      - '80:80/tcp'
+      - '443:443/tcp'
+      - '8080:8080/tcp'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/ddata/traefikv1:/etc/traefik
+      - /var/ddata/traefikv1/traefik.log:/traefik.log
+      - /var/ddata/traefikv1/acme.json:/acme.json
+    networks:
+      - proxy
+    restart: always
+              
+networks:
+  proxy:
+    external: 
+      name: proxy # using name: proxy instead of simply external: true is a workaround for libcompose in portainer (v2.1 and earlier)
+
+

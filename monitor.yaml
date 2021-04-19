@@ -1,0 +1,33 @@
+version: '3'
+services:
+  netdata:
+    image: netdata/netdata
+    container_name: netdata
+    hostname: ayew.host # set to fqdn of host
+    #ports:
+    #  - 19999:19999
+    restart: unless-stopped
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - apparmor:unconfined
+    networks: 
+      - proxy
+    labels:
+      - traefik.frontend.rule=Host:netdata.ayew.host
+      - traefik.docker.network=proxy
+      - traefik.port=19999
+    volumes:
+      - /var/ddata/monitor/netdata/config:/etc/netdata
+      - /var/ddata/monitor/netdata/lib:/var/lib/netdata
+      - /var/ddata/monitor/netdata/cache:/var/cache/netdata
+      - /etc/passwd:/host/etc/passwd:ro
+      - /etc/group:/host/etc/group:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /etc/os-release:/host/etc/os-release:ro
+
+networks:
+  proxy:
+    external: true  
+

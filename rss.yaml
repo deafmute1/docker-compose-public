@@ -1,0 +1,45 @@
+version: '2'
+
+services:
+  miniflux:
+    image: miniflux/miniflux:2.0.7
+    container_name: miniflux-core
+    environment:
+      - DATABASE_URL=postgres://miniflux:MU8nWa5ntBnYswzKNVp9@db/miniflux?sslmode=disable
+      - RUN_MIGRATIONS=1
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - internal
+      - proxy
+    labels:
+      - traefik.frontend.rule=Host:rss.ayew.host
+      - traefik.port=8080
+      - traefik.docker.network=proxy
+    depends_on:
+      - db
+    restart: always   
+
+  db:
+    image: postgres:10.1
+    container_name: miniflux-db
+    environment:
+      - POSTGRES_USER=miniflux
+      - POSTGRES_PASSWORD=MU8nWa5ntBnYswzKNVp9
+    volumes:
+      - /var/ddata/rss/miniflux/database:/var/lib/postgresql/data
+      - /etc/localtime:/etc/localtime:ro
+    hostname: db
+    networks:
+      - internal
+    restart: always   
+
+networks:
+  proxy:
+    external: 
+      name: proxy # using name: proxy instead of simply external: true is a workaround for libcompose in portainer (v2.1 and earlier)
+  internal:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.16.15.0/24    

@@ -1,0 +1,68 @@
+version: '2'
+services:
+  gitea:
+    image: gitea/gitea:1.12.4
+    container_name: gitea-core
+    volumes:
+      - /var/ddata/git/gitea:/data
+    environment: # https://docs.gitea.io/en-us/install-with-docker/#environments-variables
+      - RUN_MODE=prod
+      - DOMAIN=git.ayew.host
+      - SSH_PORT=220 # only for UI, does not modify listen port (use SSH_LISTEN_PORT)
+      - ROOT_URL=https://git.ayew.host
+      - LFS_START_SERVER=true
+      - DB_TYPE=mysql
+      - DB_HOST=db:3306
+      - DB_NAME=gitea
+      - DB_USER=gitea
+      - DB_PASSWD=uoUKffKnwQ3D4ui2464h
+      - USER_UID=997
+      - GROUP_GID=993
+    ports:
+      #- "3000:3000" #http
+      - "220:22" # ssh
+    networks:
+      - internal
+      - proxy
+    labels:
+      - traefik.frontend.rule=Host:git.ayew.host
+      - traefik.docker.network=proxy
+      - traefik.port=3000
+    depends_on:
+      - db
+    restart: always
+
+  db:
+    image: mariadb:10
+    container_name: gitea-db
+    environment:
+      - MYSQL_HOST=db
+      - MYSQL_ROOT_PASSWORD=9atNcpKAch8dQktshtY7
+      - MYSQL_DATABASE=gitea
+      - MYSQL_USER=gitea
+      - MYSQL_PASSWORD=uoUKffKnwQ3D4ui2464h
+    hostname: db
+    networks:
+      - internal
+    volumes:
+      - /var/ddata/git/db:/var/lib/mysql
+    restart: always
+
+  mirror-personal-github: 
+    image: jaedle/mirror-to-gitea:latest 
+    environment: 
+      - GITHUB_USERNAME=deafmute1 
+      - GITHUB_TOKEN=8e0ffe30b4557b0ef9f6b1697347feb102aa9db8 
+      - GITEA_URL=https://git.ayew.host 
+      - GITEA_TOKEN=3def1b90414184e2e67419c820c6e261e817462b
+    restart: on-failure
+
+networks:
+  proxy:
+    external: 
+      name: proxy # using name: proxy instead of simply external: true is a workaround for libcompose in portainer (v2.1 and earlier)
+  internal:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.16.13.0/24

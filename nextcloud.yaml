@@ -1,0 +1,65 @@
+version: "2"
+# deploy to swarm
+
+services:
+  nextcloud:
+    image: nextcloud:latest
+    environment:
+      - MYSQL_HOST=db
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+      - MYSQL_PASSWORD=oBxgyY91YjHzZO9oy193
+    volumes:
+      - /var/ddata/nextcloud/html:/var/www/html
+      - /var/ddata/nextcloud/apps:/var/www/html/custom_apps
+      - /var/ddata/nextcloud/config:/var/www/html/config
+      - /var/ddata/nextcloud/data:/var/www/html/data
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - proxy
+      - internal
+    labels:
+      - traefik.frontend.rule=Host:nextcloud.ayew.host
+      - traefik.docker.network=proxy
+      - traefik.port=80
+    depends_on:
+      - db
+      - redis
+    restart: always
+
+  db:
+    image: mariadb:10
+    environment:
+      - MYSQL_HOST=db
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=nextcloud
+      - MYSQL_PASSWORD=oBxgyY91YjHzZO9oy193
+      - MYSQL_ROOT_PASSWORD=2XzV6ag9xiMCOuNSyk87
+    volumes:
+      - /var/ddata/nextcloud/db:/var/lib/mysql
+      - /etc/localtime:/etc/localtime:ro
+    hostname: db
+    networks:
+      - internal
+    restart: always
+          
+  redis:
+    image: redis:alpine
+    volumes:
+      - /var/ddata/nextcloud/redis:/data
+      - /etc/localtime:/etc/localtime:ro
+    hostname: redis
+    networks:
+      - internal
+    restart: always
+
+networks:
+  proxy:
+    external: 
+      name: proxy # using name: proxy instead of simply external: true is a workaround for libcompose in portainer (v2.1 and earlier)
+  internal:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.16.12.0/24
+        

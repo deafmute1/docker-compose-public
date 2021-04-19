@@ -1,0 +1,22 @@
+version: '3'
+
+services: 
+  valheim-server:
+    image: lloesche/valheim-server
+    container_name: valheim-server 
+    environment: 
+      - SERVER_NAME="Degen"
+      - SERVER_PASS=qt3145catgirls
+      - WORLD_NAME="world1"
+      - TZ="Australia/Melbourne"
+      - BACKUPS=true 
+      - BACKUPS_MAX_AGE=7
+      - VALHEIM_PLUS=false 
+      - SERVER_PUBLIC=1
+      - SERVER_PORT=2456 
+    volumes:
+      - /var/ddata/valheim/config:/config  
+      - /var/ddata/valheim/data:/opt/valheim 
+    ports:
+      - 2456-2458:2456-2458/udp
+    restart: always 

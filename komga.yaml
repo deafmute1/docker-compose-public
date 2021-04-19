@@ -1,0 +1,22 @@
+version: '3'
+
+services: 
+  komga:     
+    image: gotson/komga 
+    container_name: komga
+    networks:
+      - proxy 
+    volumes:
+      - /var/ddata/komga/config:/config
+      - /export/mergerfs/media/manga:/books
+      - /etc/timezone:/etc/timezone:ro  
+    labels:
+      - traefik.frontend.rule=Host:komga.ayew.host
+      - traefik.docker.network=proxy
+      - traefik.port=8080
+    user: "1001:1001"
+    restart: always
+
+networks:
+  proxy:
+    external: true  

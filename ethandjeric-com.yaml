@@ -1,0 +1,24 @@
+version: '3'
+
+services:
+  ghost: # provides inbuilt SQLite
+    image: ghost:alpine # v3 alpine image
+    container_name: ghost-ethandjeric-com
+    environment:
+      - url=https://ethandjeric.com
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/ddata/ethandjeric-com/ghost/:/var/lib/ghost/content
+    networks:
+      - proxy
+    labels:
+      - traefik.frontend.rule=Host:ethandjeric.com,www.ethandjeric.com
+      - traefik.docker.network=proxy
+      - traefik.port=2368
+      - traefik.frontend.redirect.regex=^https?://www.ethandjeric.com/(.*)
+      - traefik.frontend.redirect.replacement=https://ethandjeric.com/$${1}
+    restart: always 
+
+networks:
+  proxy:
+    external: true 

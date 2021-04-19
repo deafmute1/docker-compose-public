@@ -1,0 +1,62 @@
+version: "2"
+
+services:
+  bitwardenrs:
+    image: bitwardenrs/server:latest
+    container_name: bitwardenrs
+    networks:
+      - proxy
+      - internal
+    environment:
+      #- WEBSOCKET_ENABLED='true'
+      - SIGNUPS_ALLOWED='true'
+      - DOMAIN=https://bitwarden.ayew.host
+      - SIGNUPS_VERIFY='true'
+      - SMTP_HOST=smtp.gmail.com
+      - SMTP_FROM=noreply.ayew.host@gmail.com
+      - SMTP_PORT=465
+      - SMTP_SSL='true'
+      - SMTP_PASSWORD=msenmnpegzrhvigp
+      - SMTP_USERNAME=noreply.ayew.host@gmail.com
+      - ADMIN_TOKEN=5THeZemy7Cm9TcL0ro6zZRqlNdPedPAg5IEFTkfFemHkohrkxGGDEYtOGug6MkDp
+      - DATABASE_URL=mysql://bitwarden:9WTwLWDNXL7v87jqqHzx@db/bitwarden
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /var/ddata/bitwarden/bitwardenrs:/data/:rw
+    labels:
+      - traefik.enable=true
+      - traefik.web.frontend.rule=Host:bitwarden.ayew.host
+      - traefik.web.port=80
+      - traefik.hub.frontend.rule=Host:bitwarden.ayew.host;Path:/notifications/hub
+      - traefik.hub.port=3012
+      - traefik.docker.network=proxy
+    depends_on:
+      - db 
+    restart: always
+
+  db:
+    image: mariadb:10
+    container_name: bitwarden-db
+    environment:
+      - MYSQL_HOST=db
+      - MYSQL_DATABASE=bitwarden
+      - MYSQL_USER=bitwarden
+      - MYSQL_PASSWORD=9WTwLWDNXL7v87jqqHzx
+      - MYSQL_ROOT_PASSWORD=xHfKW7D3E7AjhVUy5vRv
+    volumes:
+      - /var/ddata/bitwarden/db:/var/lib/mysql
+    hostname: db
+    networks:
+      - internal
+    restart: always
+
+networks:
+  proxy:
+    external: 
+      name: proxy # using name: proxy instead of simply external: true is a workaround for libcompose in portainer (v2.1 and earlier)
+  internal:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.16.14.0/24
+

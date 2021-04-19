@@ -1,0 +1,42 @@
+version: '2'
+
+services:
+  calibre-web:
+    image: linuxserver/calibre-web:latest
+    container_name: calibre-web
+    environment:
+      - PUID=1002
+      - PGID=1003
+      - TZ=Australia/Melbourne
+      - DOCKER_MODS=linuxserver/calibre-web:calibre
+    volumes:
+      - /var/ddata/calibre/config/calibre-web:/config
+      - /export/mergerfs/media/calibre:/books
+    networks:
+      - proxy
+    labels:
+      - traefik.frontend.rule=Host:calibre.ayew.host
+      - traefik.docker.network=proxy
+      - traefik.port=8083
+    restart: always
+    
+  calibredb: 
+    image: deafmute/calibredb:latest
+    container_name: calibredb
+    environment:
+      - UMASK_SET=022 
+      - LIBRARY_UID=1002
+      - LIBRARY_GID=1003
+      - IMPORT_TIME=30m
+      - DELETE_IMPORTED=false
+    volumes:
+      - /var/ddata/calibre/config/calibre:/calibre/config
+      - /export/mergerfs/downloads/user/calibre:/calibre/import
+      - /export/mergerfs/media/calibre:/calibre/library
+    restart: always 
+
+networks:
+  proxy:
+    external: 
+      name: proxy # using name: proxy instead of simply external: true is a workaround for libcompose in portainer (v2.1 and earlier)
+

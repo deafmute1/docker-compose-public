@@ -1,0 +1,205 @@
+version: '2'
+
+services:
+  ombi:
+    image: ghcr.io/linuxserver/ombi:v4-preview
+    container_name: ombi
+    environment:
+      - PGID=1001
+      - PUID=1001
+    volumes:
+      - /var/ddata/autoget/ombi:/config
+    networks:
+      - internal
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.frontend.rule=Host:ombi.ayew.host
+      - traefik.docker.network=proxy
+      - traefik.port=3579 
+    depends_on:
+      - sonarr
+      - radarr 
+    restart: always
+
+  overseerr: 
+    image: sctx/overseerr 
+    container_name: overseerr 
+    user: "1001:1001"
+    environment: 
+      - LOG_LEVEL=info 
+      - TZ=Melbourne/Australia 
+    volumes: 
+      - /var/ddata/autoget/overseerr:/app/config 
+    networks:
+      - internal 
+      - proxy 
+    labels: 
+      - traefik.enable=true
+      - traefik.frontend.rule=Host:req.ayew.host
+      - traefik.docker.network=proxy
+      - traefik.port=5055 
+    depends_on: 
+      - sonarr 
+      - radarr 
+    restart: unless-stopped 
+
+  bazarr: 
+    image: linuxserver/bazarr:latest
+    container_name: bazarr
+    environment:
+      - PGID=1001
+      - PUID=1001
+    ports:
+      - '6767:6767'
+    volumes:
+      - /var/ddata/autoget/bazarr:/config
+      - /export/mergerfs/media/:/media
+      - /export/mergerfs/downloads/sys/:/downloads
+    networks:
+      - internal
+    depends_on: 
+      - sonarr
+      - radarr
+    restart: always
+
+  sonarr:
+    image: linuxserver/sonarr:latest
+    container_name: sonarr
+    environment:
+      - PGID=1001
+      - PUID=1001
+    volumes:
+      - /var/ddata/autoget/sonarr:/config
+      - /export/mergerfs/media:/media
+      - /export/mergerfs/downloads/sys:/downloads
+    hostname: sonarr
+    networks:
+      - internal
+    ports:
+      - '8989:8989'
+    depends_on:
+      - transmission-sys2
+      - jackett
+    restart: always
+
+  radarr:
+    image: linuxserver/radarr:latest
+    container_name: radarr
+    environment:
+      - PGID=1001
+      - PUID=1001
+    volumes:
+      - /var/ddata/autoget/radarr:/config
+      - /export/mergerfs/media:/media
+      - /export/mergerfs/downloads/sys:/downloads
+    hostname: radarr
+    networks:
+      - internal
+    ports:
+      - '7878:7878'
+    depends_on: 
+      - transmission-sys2
+      - jackett
+    restart: always
+  
+  jackett: 
+    image: linuxserver/jackett:latest
+    container_name: jackett
+    environment:
+      - AUTO_UPDATE=false
+    volumes:
+      - /var/ddata/autoget/jackett:/config
+    hostname: jackett
+    networks:
+      - internal
+    ports:
+      - '9117:9117'
+    restart: always
+
+  transmission-sys2:
+    image: linuxserver/transmission:latest
+    container_name: transmission-sys2
+    environment:
+      - PGID=1001
+      - PUID=1001
+      - UMASK_SET=002
+      - USER=debian
+      - PASSWORD=edgyeren        
+    volumes:
+      - /var/ddata/autoget/transmission-sys2:/config
+      - /export/mergerfs/downloads/sys:/downloads
+    hostname: transmission-sys2
+    networks:
+      - internal
+    ports:
+      - 9091:9091 #webui and daemon
+      - 51413:51413 #bt
+      - 51413:51413/udp #bt
+    restart: always 
+
+
+  transmission-user:
+    image: linuxserver/transmission:latest
+    environment:
+      - PGID=1001
+      - PUID=1001
+      - UMASK_SET=002
+      - USER=debian
+      - PASSWORD=edgyeren        
+    volumes:
+      - /var/ddata/autoget/transmission-user:/config
+      - /export/mergerfs/downloads/user:/downloads
+      - /export/mergerfs/media/music:/libs/music
+      - /export/mergerfs/media/manga:/libs/manga
+      - /export/mergerfs/media:/media
+    hostname:  transmission-user 
+    networks:
+      - internal
+    ports:
+      - '9092:9091' #webui and daemon
+      - '51415:51413' #bt
+      - '51415:51413/udp' #bt
+    restart: always
+
+  deemix:
+    image: registry.gitlab.com/bockiii/deemix-docker
+    container_name: deemix 
+    volumes:
+      - /export/mergerfs/media/music:/downloads
+      - /var/ddata/autoget/deemix:/config
+    environment:
+      - PUID=1001
+      - PGID=1001
+      - UMASK_SET=002
+      - DEEZUI=false
+    ports:
+      - 6595:6595
+    restart: on-failure    
+
+  soulseek: 
+    image: realies/soulseek 
+    container_name: soulseek
+    environment: 
+      - puid=1001
+      - pgid=1001
+      - resize=scale 
+      - resolution=1280x720 
+    volumes: 
+      - /var/ddata/autoget/soulseek/appdata:/data/.SoulseekQt
+      - /var/ddata/autoget/soulseek/logs:/data/Soulseek Chat Logs
+      - /export/mergerfs/media/music:/data/Soulseek Downloads
+    ports: 
+      - 6080:6080
+      - 2416:2416
+    restart: on-failure
+
+networks:
+  proxy:
+    name: proxy # using name: proxy instead of simply external: true is a workaround for libcompose in portainer (v2.1 and earlier)
+  internal:
+    driver: bridge
+    ipam:
+        config:
+            - subnet: 172.16.11.0/24
+

@@ -1,0 +1,23 @@
+version: '2'
+
+services:
+  linx-server:
+    container_name: linx-server
+    image: andreimarcu/linx-server
+    command: -config /data/linx-server.conf
+    volumes:
+      - /var/ddata/up/linx/files:/data/files
+      - /var/ddata/up/linx/meta:/data/meta
+      - /var/ddata/up/linx/config/linx-server.conf:/data/linx-server.conf
+    networks:
+      - proxy
+    labels:
+      - traefik.frontend.rule=Host:up.ayew.host
+      - traefik.docker.network=proxy
+      - traefik.port=8080
+    restart: unless-stopped
+
+networks:
+  proxy:
+    external: 
+      name: proxy # using name: proxy instead of simply external: true is a workaround for libcompose in portainer (v2.1 and earlier)

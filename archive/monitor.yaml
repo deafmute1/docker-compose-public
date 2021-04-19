@@ -1,0 +1,112 @@
+## From swarmprom
+version: "3.3"
+
+services:
+  dockerd-exporter:
+    image: stefanprodan/caddy
+    container_name: dockerd-exporter
+    networks:
+      - internal
+    environment:
+      - DOCKER_GWBRIDGE_IP=172.18.0.1
+    volumes:
+      - /var/ddata/monitor/config/dockerd-exporter/Caddyfile:/etc/caddy/Caddyfile
+    mem_limit: 128M
+    mem_reservation: 64M
+
+  cadvisor:
+    image: google/cadvisor
+    container_name: cadvisor
+    networks:
+      - internal
+    command: -logtostderr -docker_only
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /:/rootfs:ro
+      - /var/run:/var/run
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    mem_limit: 128M
+    mem_reservation: 64M
+
+  grafana:
+    image: stefanprodan/swarmprom-grafana:5.3.4
+    container_name: grafana
+    networks:
+      - internal
+    ports:
+      - 9001:3000
+    environment:
+      - GF_SECURITY_ADMIN_USER=debian
+      - GF_SECURITY_ADMIN_PASSWORD=UU5HwYBm87Ghu2XQNkJY
+      - GF_USERS_ALLOW_SIGN_UP=false
+      #- GF_SMTP_ENABLED=${GF_SMTP_ENABLED:-false}
+      #- GF_SMTP_FROM_ADDRESS=${GF_SMTP_FROM_ADDRESS:-grafana@test.com}
+      #- GF_SMTP_FROM_NAME=${GF_SMTP_FROM_NAME:-Grafana}
+      #- GF_SMTP_HOST=${GF_SMTP_HOST:-smtp:25}
+      #- GF_SMTP_USER=${GF_SMTP_USER}
+      #- GF_SMTP_PASSWORD=${GF_SMTP_PASSWORD}
+    volumes:
+      - /var/ddata/monitor/grafana:/var/lib/grafana
+    mem_limit: 128M
+    mem_reservation: 64M
+
+  node-exporter:
+    image: stefanprodan/swarmprom-node-exporter:v0.16.0
+    container_name: node-exporter
+    networks:
+      - internal
+    environment:
+      - NODE_ID={{.Node.ID}}
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+      - /etc/hostname:/etc/nodename
+    command:
+      - '--path.sysfs=/host/sys'
+      - '--path.procfs=/host/proc'
+      - '--collector.textfile.directory=/etc/node-exporter/'
+      - '--collector.filesystem.ignored-mount-points=^/(sys|proc|dev|host|etc)($$|/)'
+      # no collectors are explicitely enabled here, because the defaults are just fine,
+      # see https://github.com/prometheus/node_exporter
+      # disable ipvs collector because it barfs the node-exporter logs full with errors on my centos 7 vm's
+      - '--no-collector.ipvs'
+    mem_limit: 128M
+    mem_reservation: 64M
+
+
+  prometheus:
+    image: stefanprodan/swarmprom-prometheus:v2.5.0
+    networks:
+      - internal
+    ports:
+      - 9002:9090
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention=24h'
+    volumes:
+      - /var/ddata/monitor/prometheus:/prometheus
+      - /var/ddata/monitor/config/rules/swarm_node.rules.yml:/etc/prometheus/swarm_node.rules.yml
+      - /var/ddata/monitor/config/rules/swarm_task.rules.yml:/etc/prometheus/swarm_task.rules.yml
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      resources:
+        limits:
+          memory: 2048M
+        reservations:
+          memory: 128M
+
+networks:
+  internal:
+    driver: overlay
+    ipam:
+      config:
+        - subnet: 172.16.29.0/24

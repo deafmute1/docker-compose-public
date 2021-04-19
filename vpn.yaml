@@ -1,0 +1,35 @@
+version: '3'
+
+services: 
+  ipsec: 
+    image:  hwdsl2/ipsec-vpn-server 
+    container_name: ipsec 
+    privileged: true 
+    volumes: 
+      - /var/ddata/vpn/ipsec.d:/etc/ipsec.d 
+    ports: 
+      - 500:500/udp 
+      - 4500:4500/udp 
+    restart: unless-stopped  
+
+  wireguard:
+    image: ghcr.io/linuxserver/wireguard
+    container_name: wireguard
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    environment:
+      - PUID=1000
+      - PGID=100
+      - TZ=Melbourne/Australia
+      - SERVERURL=ayew.host
+      - PEERDNS=192.168.1.10,192.168.1.11
+      - PEERS=2
+      - INTERNAL_SUBNET=10.13.13.0  
+      - SERVERPORT=51820 
+    volumes:
+      - /var/ddata/vpn/wireguard:/config
+      - /lib/modules:/lib/modules
+    ports:
+      - 51820:51820/udp
+    restart: unless-stopped

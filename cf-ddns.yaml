@@ -1,0 +1,20 @@
+version: '2'
+
+services:  
+  ayew-host-ddns:   
+    image: oznu/cloudflare-ddns:latest
+    container_name: ayew-host-ddns
+    environment:
+      - API_KEY=secret
+      - ZONE=ayew.host  # use CNAME records off this to get subdomains
+      - PROXIED=false
+    restart: always
+
+  ethandjeric-com-ddns:   
+    image: oznu/cloudflare-ddns:latest
+    container_name: ethandjeric-com-ddns
+    environment:
+      - API_KEY=secret
+      - ZONE=ethandjeric.com  # use CNAME records off this to get subdomains
+      - PROXIED=false
+    restart: always

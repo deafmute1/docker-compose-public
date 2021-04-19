@@ -1,0 +1,15 @@
+version: '3'
+
+services:
+  # Manually run: sudo docker run -it --rm -v /var/ddata/imapbackup/config:/config -v /export/mergerfs/backup/add-sources/mail:/mail jakewharton/mbsync /app/sync.sh 
+  mbsync:
+    image: jakewharton/mbsync:latest
+    restart: unless-stopped
+    container_name: imapbackup_mbsync 
+    volumes:
+      - /var/ddata/imapbackup/config:/config
+      - /export/mergerfs/backup/add-sources/mail:/mail
+    environment:
+      - "CRON=0 0 * * *"
+      - "PUID=0"
+      - "PGID=0"

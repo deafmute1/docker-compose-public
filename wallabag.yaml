@@ -1,0 +1,58 @@
+version: '3'
+services:
+  wallabag:
+    image: wallabag/wallabag
+    environment:
+      - MYSQL_ROOT_PASSWORD=@8q@!pYpZQ%ZT%iM$Nw&
+      - SYMFONY__ENV__DATABASE_DRIVER=pdo_mysql
+      - SYMFONY__ENV__DATABASE_HOST=db
+      - SYMFONY__ENV__DATABASE_PORT=3306
+      - SYMFONY__ENV__DATABASE_NAME=wallabag 
+      - SYMFONY__ENV__DATABASE_USER=wallabag 
+      - SYMFONY__ENV__DATABASE_PASSWORD=kezqg%M7^zxiA8@uLo8b 
+      - SYMFONY__ENV__DATABASE_CHARSET=utf8mb4
+      - SYMFONY__ENV__MAILER_HOST=mail.prviateemail.com 
+      - SYMFONY__ENV__MAILER_USER=noreply@ayew.host
+      - SYMFONY__ENV__MAILER_PASSWORD=^DT*8ScPpnk!Ad^p7XFxc
+      - SYMFONY__ENV__FROM_EMAIL=noreply+wallabag@ayew.host 
+      - SYMFONY__ENV__DOMAIN_NAME=https://wallabag.ayew.host 
+      - SYMFONY__ENV__SERVER_NAME="ayew's private wallabag"
+      - SYMFONY__ENV__REDIS_HOST=redis 
+    labels:
+      - traefik.frontend.rule=Host:wallabag.ayew.host
+      - traefik.docker.network=proxy
+      - traefik.port=80
+    volumes:
+      - /var/ddata/wallabag/images:/var/www/wallabag/web/assets/images
+    networks: 
+      - internal 
+      - proxy 
+    restart: unless-stopped 
+  
+  db:
+    image: mariadb
+    hostname:  db 
+    environment:
+      - MYSQL_ROOT_PASSWORD=@8q@!pYpZQ%ZT%iM$Nw&
+    volumes:
+      - /var/ddata/wallabag/db:/var/lib/mysql
+    networks: 
+      - internal 
+    restart: unless-stopped 
+
+
+  redis:
+    image: redis:alpine
+    hostname: redis 
+    networks: 
+      - internal 
+    restart: unless-stopped 
+
+networks:
+  proxy:
+    external: true  
+  internal:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.16.18.0/24
